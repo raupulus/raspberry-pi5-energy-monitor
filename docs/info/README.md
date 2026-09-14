@@ -21,10 +21,13 @@ Documentación técnica **viva** del monitor de energía y consumo para Raspberr
 | Módulo | Documento | Estado | Descripción |
 | :--- | :--- | :--- | :--- |
 | `src/env.example.py` | *(Documentado en [COMPONENTS.md](COMPONENTS.md))* | ✅ Verificado | Plantilla de configuración y secretos. |
-| Colectores (`src/collectors/`) | *(Pendiente)* | ⚠️ Sin verificar | Módulos de lectura de PMIC, métricas y Hailo-8. |
-| Búfer (`src/buffer/`) | *(Pendiente)* | ⚠️ Sin verificar | Acumulador y caché de telemetría local. |
-| Cliente API (`src/api/`) | *(Pendiente)* | ⚠️ Sin verificar | Transmisión HTTP hacia la API receptora. |
-| Servicio (`src/main.py`) | *(Pendiente)* | ⚠️ Sin verificar | Demonio y orquestador principal. |
+| `src/models.py` | *(Documentado en módulos)* | ✅ Verificado | Modelos de datos inmutables y tipado estricto. |
+| `src/collectors/pmic.py` | [pmic.md](pmic.md) | ✅ Verificado | Adquisición ADC de 12 raíles del PMIC DA9091. |
+| `src/collectors/system.py` | [system.md](system.md) | ✅ Verificado | Salud de CPU, RAM, disco, temperaturas y tacómetro. |
+| `src/collectors/hailo.py` | [hailo.md](hailo.md) | ✅ Verificado | Telemetría térmica y potencia estimada de Hailo-8 M.2. |
+| `src/buffer/aggregator.py` | [aggregator.md](aggregator.md) | ✅ Verificado | Búfer en RAM (Zero-Disk Wear) y agregación de ventanas. |
+| `src/api/client.py` | [api-client.md](api-client.md) | ✅ Verificado | Cliente HTTP POST con reintentos hacia API V2. |
+| `src/main.py` | [daemon.md](daemon.md) | ✅ Verificado | Demonio síncrono y orquestador CLI/systemd. |
 
 ---
 
@@ -35,5 +38,5 @@ Documentación técnica **viva** del monitor de energía y consumo para Raspberr
 | **API V2 (Backend Propio)** | [apis/api-v2.md](apis/api-v2.md) | [docs/apis/api-v2/README.md](../apis/api-v2/README.md) | ⚠️ Sin verificar con petición real |
 
 ---
-> Creado: 2026-09-13 · Última revisión: 2026-09-13
+> Creado: 2026-09-13 · Última revisión: 2026-09-14
 

@@ -66,5 +66,23 @@ Registro histórico de decisiones deliberadas de arquitectura y diseño. Si una 
 - **Consecuencias**: No se requiere hardware externo de medición para monitorear la NPU.
 
 ---
-> Creado: 2026-09-13 · Última revisión: 2026-09-13
+
+### DT-008: Cero Dependencias de Terceros en Tiempo de Ejecución (Pure Python Standard Library)
+- **Fecha**: 2026-09-14
+- **Estado**: Aprobada y verificada
+- **Contexto**: Minimizar el footprint de memoria en Raspberry Pi 5 y evitar incompatibilidades de paquetes o necesidad de compilar ruedas C en Raspberry Pi OS.
+- **Decisión**: Implementar toda la lógica del demonio, colectores, búfer y cliente HTTP utilizando exclusivamente la biblioteca estándar de Python (`urllib.request`, `collections`, `dataclasses`, `subprocess`, `os`, `socket`, `time`). El SDK opcional `hailo_platform` se carga de forma perezosa mediante `importlib`/`try-except`.
+- **Consecuencias**: El monitor es inmediatamente portable, arranca al instante y tiene un consumo de memoria inferior a 15 MB de RAM.
+
+---
+
+### DT-009: Aplazamiento de Monitorización de Ventilador para HAT Hailo-8
+- **Fecha**: 2026-09-14
+- **Estado**: Aprobada
+- **Contexto**: La inspección física en hardware real reveló que el HAT portador del módulo Hailo-8 M.2 carece de sensor tacómetro expuesto en el Device Tree (`cooling_device` o `hwmon`). El único ventilador controlado por el kernel es el Active Cooler de la Raspberry Pi 5 (`hwmon2`).
+- **Decisión**: Reportar el ventilador únicamente en el Canal 0 (`loads[0].fan`). Omitir el campo `fan` en el Canal 1 (`loads[1]`) y aplazar su monitorización a `docs/future/hailo8-fan.md` hasta que se incorpore un HAT con tacómetro o control GPIO mapeado.
+- **Consecuencias**: El payload cumple estrictamente con el contrato de API V2 sin inventar lecturas ficticias.
+
+---
+> Creado: 2026-09-13 · Última revisión: 2026-09-14
 

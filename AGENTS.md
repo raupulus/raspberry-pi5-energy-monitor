@@ -54,19 +54,51 @@ Este repositorio contiene el sistema de monitorización continua de energía, co
 │   │       ├── energy.md
 │   │       ├── hardware.md
 │   │       └── src/
+│   ├── future/                   # Ideas y funcionalidades aplazadas
+│   │   └── hailo8-fan.md         # Monitorización de ventilador secundario HAT Hailo-8
 │   └── info/                     # Documentación técnica VIVA del proyecto
 │       ├── _MODULE_TEMPLATE.md   # Plantilla obligatoria para documentar módulos
 │       ├── COMPONENTS.md         # Catálogo de componentes del sistema
 │       ├── DESIGN.md             # Principios y arquitectura del sistema
 │       ├── README.md             # Índice maestro de documentación técnica
+│       ├── aggregator.md         # Agregador y búfer de telemetría en RAM
+│       ├── api-client.md         # Cliente HTTP hacia API V2
 │       ├── apis/                 # Integración interna de APIs
 │       │   └── api-v2.md
 │       ├── commands.md           # Comandos de entorno y ejecución
+│       ├── daemon.md             # Demonio síncrono y orquestador CLI/systemd
 │       ├── decisiones-tecnicas.md# Registro de decisiones deliberadas
-│       └── hardware.md           # Especificación técnica de hardware y telemetría
+│       ├── hailo.md              # Colector opcional Hailo-8 M.2 AI NPU
+│       ├── hardware.md           # Especificación técnica de hardware y telemetría
+│       ├── pmic.md               # Colector de 12 raíles del PMIC DA9091
+│       └── system.md             # Colector de métricas de sistema y salud
 ├── src/                          # Código fuente de la aplicación
-│   └── env.example.py            # Plantilla de configuración y secretos locales
+│   ├── __init__.py
+│   ├── api/                      # Cliente de transmisión API
+│   │   ├── __init__.py
+│   │   └── client.py
+│   ├── buffer/                   # Búfer en RAM y agregación
+│   │   ├── __init__.py
+│   │   └── aggregator.py
+│   ├── collectors/               # Colectores de telemetría y hardware
+│   │   ├── __init__.py
+│   │   ├── base.py
+│   │   ├── hailo.py
+│   │   ├── pmic.py
+│   │   └── system.py
+│   ├── env.example.py            # Plantilla de configuración y secretos locales
+│   ├── main.py                   # Punto de entrada y demonio del servicio
+│   └── models.py                 # Dataclasses y modelos de datos
+├── systemd/                      # Configuración de servicio del sistema
+│   └── energy-monitor.service    # Unidad systemd para Raspberry Pi OS
 └── tests/                        # Pruebas unitarias y de integración
+    ├── test_aggregator.py
+    ├── test_api_client.py
+    ├── test_hailo.py
+    ├── test_main.py
+    ├── test_models.py
+    ├── test_pmic.py
+    └── test_system.py
 ```
 
 ---
@@ -113,6 +145,12 @@ $$\text{Código Real} > \text{docs/info/} > \text{AGENTS.md} > \text{el resto}$$
 - [hardware.md](docs/info/hardware.md): Especificación técnica de hardware, PMIC DA9091, 12 raíles, Hailo-8, fórmulas y sensores térmicos.
 - [commands.md](docs/info/commands.md): Catálogo de comandos verificados.
 - [decisiones-tecnicas.md](docs/info/decisiones-tecnicas.md): Registro histórico de decisiones técnicas.
+- [pmic.md](docs/info/pmic.md): Colector PMIC DA9091 de 12 raíles.
+- [system.md](docs/info/system.md): Colector de salud de CPU, RAM, disco y ventilador.
+- [hailo.md](docs/info/hailo.md): Colector de acelerador Hailo-8 M.2 AI NPU.
+- [aggregator.md](docs/info/aggregator.md): Agregador y búfer de telemetría en RAM.
+- [api-client.md](docs/info/api-client.md): Cliente HTTP hacia API V2.
+- [daemon.md](docs/info/daemon.md): Demonio de servicio y orquestador principal.
 
 ---
 

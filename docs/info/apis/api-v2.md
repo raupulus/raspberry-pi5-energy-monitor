@@ -52,8 +52,7 @@ El cliente implementará el **Modo Conjunto Universal** como mecanismo principal
         "voltage": 3.30,
         "amperage": 0.35,
         "power": 1.15,
-        "temperature": 41.0,
-        "fan": 1
+        "temperature": 41.0
       }
     ]
   },

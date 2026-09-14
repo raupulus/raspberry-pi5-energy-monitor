@@ -1,0 +1,19 @@
+[Unit]
+Description=Raspberry Pi 5 Energy & Consumption Monitor
+Documentation=https://gitlab.com/raupulus/raspberry-pi5-energy-monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/git/raspberry-pi5-energy-monitor
+ExecStart=/home/pi/git/raspberry-pi5-energy-monitor/.venv/bin/python -m src.main
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
