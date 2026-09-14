@@ -44,7 +44,8 @@ El cliente implementará el **Modo Conjunto Universal** como mecanismo principal
         "voltage": 5.08,
         "amperage": 0.54,
         "power": 2.74,
-        "temperature": 48.2
+        "temperature": 48.2,
+        "fan": 2
       },
       {
         "channel": 1,

@@ -72,6 +72,12 @@ vcgencmd pmic_read_adc
          ts0 = t.ts0_temperature
          ts1 = t.ts1_temperature
      ```
+4. **Ventilador Oficial Raspberry Pi 5 (Active Cooler / Case Fan)**:
+   - Nivel PWM / Estado térmico de refrigeración (0 a 4):
+     `/sys/class/thermal/cooling_device0/cur_state`
+   - Tacómetro de velocidad en RPM (si está soportado por el controlador hwmon):
+     `/sys/devices/platform/cooling_fan/hwmon/hwmon*/fan1_input`
+   - Se mapea al campo `fan` (tipo `int >= 0`) en el canal de consumo de la Raspberry Pi 5.
 
 ---
 
@@ -108,4 +114,5 @@ El comando `vcgencmd get_throttled` devuelve una máscara de bits hexadecimal co
 - Pruebas contra Raspberry Pi 5 física: `⚠️ sin verificar en entorno local` (este repositorio se desarrolla con soporte de mocks / abstracción para entornos de desarrollo macOS / Linux x86_64).
 
 ---
-> Creado: 2026-09-13 · Última revisión: 2026-09-13
+> Creado: 2026-09-13 · Última revisión: 2026-09-14
+
