@@ -35,7 +35,7 @@ Documentación técnica **viva** del monitor de energía y consumo para Raspberr
 
 | API / Servicio | Documentación Interna | Especificación Oficial | Estado |
 | :--- | :--- | :--- | :--- |
-| **API V2 (Backend Propio)** | [apis/api-v2.md](apis/api-v2.md) | [docs/apis/api-v2/README.md](../apis/api-v2/README.md) | ⚠️ Sin verificar con petición real |
+| **API V2 (Backend Propio)** | [apis/api-v2.md](apis/api-v2.md) | [docs/apis/api-v2/README.md](../apis/api-v2/README.md) | ✅ Verificado (HTTP 201 en producción) |
 
 ---
 > Creado: 2026-09-13 · Última revisión: 2026-09-14

@@ -78,15 +78,15 @@ El cliente implementará el **Modo Conjunto Universal** como mecanismo principal
 
 | Campo API | Fuente en Raspberry Pi 5 | Estado |
 | :--- | :--- | :--- |
-| `temp` | `/sys/class/thermal/thermal_zone0/temp` (dividido entre 1000) | ⚠️ Sin verificar |
-| `voltage` | Lectura PMIC DA9091 (rail de entrada `EXT5V` o 5V) | ⚠️ Sin verificar |
-| `battery_level` | `null` (alimentación por red eléctrica habitual) | ⚠️ Sin verificar |
-| `cpu` | Cálculo de porcentaje de uso de CPU (`/proc/stat` o `psutil`) | ⚠️ Sin verificar |
-| `disk` | Porcentaje de uso del sistema de ficheros raíz `/` | ⚠️ Sin verificar |
-| `ram` | Porcentaje de uso de memoria RAM (`/proc/meminfo`) | ⚠️ Sin verificar |
-| `uptime` | Segundos desde arranque (`/proc/uptime`) | ⚠️ Sin verificar |
-| `ip_local` | Detección de IP en interfaz activa (`eth0` / `wlan0`) | ⚠️ Sin verificar |
-| `extra` | Diccionario con estado del acelerador Hailo-8 (`hailo8_temp`), estado de estrangulamiento (`throttle_state`) | ⚠️ Sin verificar |
+| `temp` | `/sys/class/thermal/thermal_zone0/temp` (miligrados a °C) o `vcgencmd measure_temp` | ✅ Verificado |
+| `voltage` | Raíl de entrada `EXT5V_V` del PMIC DA9091 vía `vcgencmd pmic_read_adc` | ✅ Verificado |
+| `battery_level` | `null` (alimentación por red eléctrica habitual vía USB-C) | ✅ Verificado |
+| `cpu` | Cálculo de porcentaje de uso mediante delta de `/proc/stat` | ✅ Verificado |
+| `disk` | Porcentaje de ocupación del sistema de ficheros raíz `/` (`statvfs`) | ✅ Verificado |
+| `ram` | Porcentaje de ocupación desde `/proc/meminfo` (`MemTotal` vs `MemAvailable`) | ✅ Verificado |
+| `uptime` | Segundos transcurridos desde el arranque del sistema (`/proc/uptime`) | ✅ Verificado |
+| `ip_local` | Detección de IP en interfaz de salida activa mediante socket UDP | ✅ Verificado |
+| `extra` | Diccionario con `hailo8_temp` (TS0/TS1), `rp1_temp`, `fan_rpm`, `throttle_state`, `samples_count` | ✅ Verificado |
 
 ---
 

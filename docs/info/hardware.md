@@ -109,9 +109,14 @@ El comando `vcgencmd get_throttled` devuelve una máscara de bits hexadecimal co
 
 ---
 
-## 7. Estado de Verificación contra Entorno Actual
+## 7. Estado de Verificación contra Hardware Real
 
-- Pruebas contra Raspberry Pi 5 física: `⚠️ sin verificar en entorno local` (este repositorio se desarrolla con soporte de mocks / abstracción para entornos de desarrollo macOS / Linux x86_64).
+- **Raspberry Pi 5 Física**: `✅ Verificado`.
+  - Muestreo de 12 raíles del PMIC DA9091 con `vcgencmd pmic_read_adc` (~2.77 W disipados, 5.06 V de entrada).
+  - Tacómetro del ventilador Active Cooler en `/sys/devices/platform/cooling_fan/hwmon/hwmon2/fan1_input` (~3785 RPM).
+  - Sondas de temperatura de silicio del SoC BCM2712 (~48.5 °C) y del RP1 Southbridge (~50.8 °C).
+  - Sensores térmicos internos TS0 y TS1 del módulo Hailo-8 M.2 (~36.6 °C) vía `hailo_platform.Device`.
+- **Entorno de desarrollo local**: `✅ Verificado` mediante suite de pruebas unitarias (`tests/`) con soporte de mocks automáticos para ejecución fuera de Linux.
 
 ---
 > Creado: 2026-09-13 · Última revisión: 2026-09-14
