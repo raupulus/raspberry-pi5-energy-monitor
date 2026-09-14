@@ -34,7 +34,6 @@ Este repositorio contiene el sistema de monitorización continua de energía, co
 
 ```text
 .
-├── .agentes -> .agents
 ├── .agents/                      # Instrucciones y prompts para agentes
 ├── .claude -> .agents            # Enlace simbólico de compatibilidad
 ├── .env.example                  # Plantilla de variables de entorno generales
