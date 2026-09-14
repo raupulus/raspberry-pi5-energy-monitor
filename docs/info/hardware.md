@@ -72,12 +72,15 @@ vcgencmd pmic_read_adc
          ts0 = t.ts0_temperature
          ts1 = t.ts1_temperature
      ```
-4. **Ventilador Oficial Raspberry Pi 5 (Active Cooler / Case Fan)**:
-   - Nivel PWM / Estado térmico de refrigeración (0 a 4):
-     `/sys/class/thermal/cooling_device0/cur_state`
-   - Tacómetro de velocidad en RPM (si está soportado por el controlador hwmon):
-     `/sys/devices/platform/cooling_fan/hwmon/hwmon*/fan1_input`
-   - Se mapea al campo `fan` (tipo `int >= 0`) en el canal de consumo de la Raspberry Pi 5.
+4. **Ventiladores del Sistema y Periféricos**:
+   - **Ventilador Principal RPi 5 (Active Cooler / Case Fan)**:
+     - Nivel PWM / Estado de refrigeración (0 a 4): `/sys/class/thermal/cooling_device0/cur_state`
+     - Tacómetro en RPM: `/sys/devices/platform/cooling_fan/hwmon/hwmon*/fan1_input`
+     - Mapeo en API: Campo `fan` en Canal 0 (`loads[0]`).
+   - **Ventilador Secundario (HAT M.2 / Hailo-8)**:
+     - El módulo M.2 no dispone de controlador de ventilador en el propio chip PCIe; el ventilador depende del HAT portador (p. ej. Waveshare, 52Pi, Geekworm con control GPIO/PWM).
+     - Si está integrado en el Device Tree (`gpio-fan` o `pwmfan`): expuesto como dispositivo de enfriamiento secundario en `/sys/class/thermal/cooling_device1/cur_state` o vía `/sys/class/hwmon/hwmon*/pwm1` / `fan1_input`.
+     - Mapeo en API: Campo `fan` en Canal 1 (`loads[1]`) si el sensor está presente. Si es de conexión fija a 5V/3.3V sin tacómetro, se omite.
 
 ---
 
