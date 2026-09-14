@@ -51,6 +51,7 @@ Este repositorio contiene el sistema de monitorización continua de energía, co
 │   │       ├── ERRATAS.md
 │   │       ├── LIMITACIONES.md
 │   │       ├── README.md
+│   │       ├── energy.md
 │   │       ├── hardware.md
 │   │       └── src/
 │   └── info/                     # Documentación técnica VIVA del proyecto
