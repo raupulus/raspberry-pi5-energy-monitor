@@ -23,10 +23,11 @@ El cliente implementará el **Modo Conjunto Universal** como mecanismo principal
   `POST /api/v2/energy/readings`
 - Agrupa en una sola transacción HTTP:
   1. **Consumos por canal** (`energy.loads`):
-     - **Canal 0 (Raspberry Pi 5 base)**: Potencia, voltaje, corriente y temperatura promediados.
-     - **Canal 1 (Hailo-8 M.2)**: Potencia y temperatura del acelerador. **Si `ENABLE_HAILO8 = False`, este canal se omite por completo del array**.
-  2. **Salud del nodo** (`hardware_device_info`): CPU, RAM, disco, temperatura, voltaje, IP local y extras (throttling, temperaturas multizona).
-  3. **Metadatos de ventana**: `duration` (segundos reales transcurridos para cálculo exacto de Wh en el backend) y `read_at` (timestamp UTC ISO-8601).
+     - **Canal 0 (Raspberry Pi 5 base)**: Potencia neta de la placa (descontando el consumo del acelerador: `P_rpi = P_total - P_hailo`), voltaje de entrada USB-C, corriente equivalente y temperatura del SoC.
+     - **Canal 1 (Hailo-8 M.2)**: Potencia estimada en el bus PCIe (~0.50 W en reposo), corriente equivalente a 3.30 V y temperatura del chip. **Si `ENABLE_HAILO8 = False`, este canal se omite por completo del array**.
+     - La suma `Canal 0 + Canal 1` representa con fidelidad absoluta la potencia total consumida por el nodo en el enchufe (DT-011).
+  2. **Salud del nodo** (`hardware_device_info`): CPU, RAM, disco, temperatura, voltaje, IP local y extras (throttling, temperaturas multizona, `hailo8_temp`).
+  3. **Metadatos de ventana**: `duration` (segundos reales continuos transcurridos para cálculo exacto de Wh en el backend, DT-010) y `read_at` (timestamp UTC ISO-8601).
 
 ---
 
@@ -42,17 +43,17 @@ El cliente implementará el **Modo Conjunto Universal** como mecanismo principal
       {
         "channel": 0,
         "voltage": 5.08,
-        "amperage": 0.54,
-        "power": 2.74,
+        "amperage": 0.441,
+        "power": 2.24,
         "temperature": 48.2,
         "fan": 2
       },
       {
         "channel": 1,
         "voltage": 3.30,
-        "amperage": 0.35,
-        "power": 1.15,
-        "temperature": 41.0
+        "amperage": 0.152,
+        "power": 0.50,
+        "temperature": 36.5
       }
     ]
   },
@@ -66,7 +67,7 @@ El cliente implementará el **Modo Conjunto Universal** como mecanismo principal
     "ip_local": "192.168.1.150",
     "extra": {
       "throttle_state": "0x0",
-      "hailo8_temp": 41.0
+      "hailo8_temp": 36.5
     }
   }
 }
@@ -101,5 +102,4 @@ Variables gestionadas en `src/env.py`:
 - `ENABLE_HAILO8`: Booleano para activar o desactivar la monitorización y canal de Hailo-8.
 
 ---
-> Creado: 2026-09-13 · Última revisión: 2026-09-14
-
+> Creado: 2026-09-13 · Última revisión: 2026-09-24

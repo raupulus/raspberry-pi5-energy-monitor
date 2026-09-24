@@ -60,10 +60,10 @@ Registro histórico de decisiones deliberadas de arquitectura y diseño. Si una 
 
 ### DT-007: Medición Indirecta de Potencia para Acelerador Hailo-8
 - **Fecha**: 2026-09-13
-- **Estado**: Aprobada
+- **Estado**: Modificada por DT-011
 - **Contexto**: El módulo M.2 de Hailo-8 carece de sensor de derivación (shunt resistor DVM) propio en su PCB.
 - **Decisión**: Estimar el impacto energético del acelerador mediante el incremento diferencial de potencia en los raíles `3V3_SYS` y `1V8_SYS` del PMIC DA9091 (que pasa de ~0.5 W en reposo a ~3.5–5.0 W en inferencia), complementado con la lectura de temperatura interna del chip (sensores TS0 y TS1 vía `hailo_platform`).
-- **Consecuencias**: No se requiere hardware externo de medición para monitorear la NPU.
+- **Consecuencias**: Provee una magnitud continua para el módulo M.2 sin requerir hardware externo de medición.
 
 ---
 
@@ -84,5 +84,24 @@ Registro histórico de decisiones deliberadas de arquitectura y diseño. Si una 
 - **Consecuencias**: El payload cumple estrictamente con el contrato de API V2 sin inventar lecturas ficticias.
 
 ---
-> Creado: 2026-09-13 · Última revisión: 2026-09-14
 
+### DT-010: Cómputo de Duración Continua de Ventana (`duration`)
+- **Fecha**: 2026-09-24
+- **Estado**: Aprobada y verificada
+- **Contexto**: El cálculo original `duration = last_sample_time - first_sample_time` (~290–295 s) ignoraba el intervalo de tiempo entre la última muestra de una ventana y la primera de la siguiente (~10 s por subida). En producción real el día acumulaba 83.540 s de duración en vez de 86.400 s (~48 minutos de consumo perdidos diariamente), ocasionando una subestimación del 3,3 % en la energía calculada por la API (`power × duration`).
+- **Decisión**: Calcular la duración como el tiempo continuo transcurrido desde el inicio de la ventana actual (`duration = max(1, int(round(current_time - self._window_start_time)))`), actualizando `_window_start_time = current_time` en cada `flush()`.
+- **Consecuencias**: Cobertura temporal exacta de 86.400 s/día sin huecos ni solapes entre ventanas contiguas. Se elimina la lógica frágil dependiente de muestras individuales.
+
+---
+
+### DT-011: Desacoplamiento de Cargas entre Canal 0 (RPi Neta) y Canal 1 (Hailo-8) sin Duplicidad
+- **Fecha**: 2026-09-24
+- **Estado**: Aprobada y verificada
+- **Contexto**: La API V2 cuenta con dos entidades de hardware independientes dadas de alta: Canal 0 (Raspberry Pi 5) y Canal 1 (Hailo-8 M.2). Anteriormente, el Canal 0 incluía la suma de todos los 12 raíles del PMIC (~2.78 W) y el Canal 1 reportaba de nuevo los raíles `3V3_SYS` + `1V8_SYS` (~0.50 W). Al sumarse ambas cargas en la API, se producía una doble contabilidad (+15% de energía fantasma).
+- **Decisión**: Mantener ambas entidades activas en el array `loads` mediante desacoplamiento complementario:
+  - **Canal 1 (Hailo-8)**: Reporta la potencia estimada en PCIe (~0.50 W en reposo) y temperatura del silicio.
+  - **Canal 0 (Raspberry Pi 5)**: Reporta la potencia neta de la placa deduciendo el consumo del Hailo (`P_rpi = max(0.0, P_total_pmic - P_hailo)`).
+- **Consecuencias**: Ambas entidades en la API se mantienen vivas y alimentadas con métricas individuales. La suma agregada de ambas cargas (`P_rpi + P_hailo`) coincide exactamente con el consumo físico total medido por el PMIC DA9091, eliminando la duplicidad.
+
+---
+> Creado: 2026-09-13 · Última revisión: 2026-09-24

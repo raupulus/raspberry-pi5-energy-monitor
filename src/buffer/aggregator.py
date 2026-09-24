@@ -54,16 +54,12 @@ class TelemetryAggregator:
         current_time = now if now is not None else time.time()
         sample_count = len(self._samples)
 
-        # Magnitudes de tiempo
-        first_sample_time = self._samples[0][3]
-        last_sample_time = self._samples[-1][3]
-        duration = max(1, int(round(last_sample_time - first_sample_time)))
-        if duration < 1 or sample_count == 1:
-            duration = max(1, int(round(self.report_interval_seconds)))
+        # Magnitud de tiempo: duración real continua desde el inicio de la ventana / reporte anterior
+        duration = max(1, int(round(current_time - self._window_start_time)))
 
         read_at_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        # Acumuladores Canal 0 (Raspberry Pi 5)
+        # Acumuladores de magnitudes del PMIC (alimentación total del nodo)
         sum_v_ext5v = 0.0
         sum_i_ext5v_a = 0.0
         sum_p_total = 0.0
@@ -81,7 +77,7 @@ class TelemetryAggregator:
         sum_rp1_temp = 0.0
         rp1_count = 0
 
-        # Acumuladores Canal 1 (Hailo-8)
+        # Acumuladores Canal 1 (Hailo-8 M.2 PCIe)
         hailo_samples_count = 0
         sum_hailo_power = 0.0
         sum_hailo_temp = 0.0
@@ -113,31 +109,35 @@ class TelemetryAggregator:
                 sum_hailo_power += hailo.estimated_power_w
                 sum_hailo_temp += hailo.avg_temp_c
 
-        # Medias Canal 0
+        # Medias globales
         avg_v = sum_v_ext5v / sample_count
-        avg_i = sum_i_ext5v_a / sample_count
-        avg_p = sum_p_total / sample_count
+        avg_p_total = sum_p_total / sample_count
         avg_soc_temp = sum_temp_soc / sample_count
 
-        loads: list[LoadReading] = [
-            LoadReading(
-                channel=0,
-                voltage=avg_v,
-                amperage=avg_i,
-                power=avg_p,
-                temperature=avg_soc_temp,
-                fan=last_fan_state,
-            )
-        ]
-
-        # Canal 1 (Hailo-8): Solo si hay muestras registradas
+        loads: list[LoadReading] = []
         avg_hailo_temp: float | None = None
+
         if hailo_samples_count > 0:
+            # Canal 1 (Hailo-8 M.2): estimación de consumo en PCIe
             avg_hailo_p = sum_hailo_power / hailo_samples_count
             avg_hailo_temp = sum_hailo_temp / hailo_samples_count
             hailo_v = 3.30
             hailo_i = (avg_hailo_p / hailo_v) if hailo_v > 0 else 0.0
 
+            # Canal 0 (Raspberry Pi 5): Consumo neto descontando el Hailo-8 para evitar duplicidad
+            rpi_power = max(0.0, avg_p_total - avg_hailo_p)
+            rpi_i = (rpi_power / avg_v) if avg_v > 0 else 0.0
+
+            loads.append(
+                LoadReading(
+                    channel=0,
+                    voltage=avg_v,
+                    amperage=rpi_i,
+                    power=rpi_power,
+                    temperature=avg_soc_temp,
+                    fan=last_fan_state,
+                )
+            )
             loads.append(
                 LoadReading(
                     channel=1,
@@ -146,6 +146,19 @@ class TelemetryAggregator:
                     power=avg_hailo_p,
                     temperature=avg_hailo_temp,
                     fan=None,
+                )
+            )
+        else:
+            # Sin Hailo-8: Canal 0 absorbe la totalidad de la potencia del PMIC
+            avg_i_total = sum_i_ext5v_a / sample_count
+            loads.append(
+                LoadReading(
+                    channel=0,
+                    voltage=avg_v,
+                    amperage=avg_i_total,
+                    power=avg_p_total,
+                    temperature=avg_soc_temp,
+                    fan=last_fan_state,
                 )
             )
 

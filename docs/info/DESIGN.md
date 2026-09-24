@@ -43,7 +43,7 @@ El flujo de información sigue un pipeline lineal desacoplado:
 
 ### 2.2. Aislamiento de Módulos Opcionales
 - El colector del módulo Hailo-8 se inicializa de forma condicional evaluando la variable de entorno `ENABLE_HAILO8` en `src/env.py`.
-- Si `ENABLE_HAILO8 = False` o el hardware/driver no está presente, el sistema funciona de manera autónoma sin degradar la monitorización principal (omitiendo el Canal 1 del array `loads`).
+- Si `ENABLE_HAILO8 = False` o el hardware/driver no está presente, el sistema funciona de manera autónoma sin degradar la monitorización principal (omitiendo el Canal 1 del array `loads` y asignando el 100% de potencia PMIC al Canal 0).
 
 ### 2.4. Política Zero-Disk Wear y Ventanas de Agregación
 - Las muestras de energía y salud se almacenan **únicamente en memoria RAM** (`collections.deque`).
@@ -60,5 +60,5 @@ El flujo de información sigue un pipeline lineal desacoplado:
 - **API Externa**: `✅ Verificado` con peticiones reales continuas a `POST /energy/readings` recibiendo HTTP 201 Created (especificado en [`apis/api-v2.md`](apis/api-v2.md)).
 
 ---
-> Creado: 2026-09-13 · Última revisión: 2026-09-14
+> Creado: 2026-09-13 · Última revisión: 2026-09-24
 

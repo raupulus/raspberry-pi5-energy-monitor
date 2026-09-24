@@ -82,7 +82,7 @@
 | `HARDWARE_DEVICE_ID` | `7` | ID asignado a la Raspberry Pi 5 en la API. |
 | `SAMPLING_INTERVAL_SECONDS` | `10.0` | Frecuencia de lectura de sensores físicos. |
 | `REPORT_INTERVAL_SECONDS` | `300.0` | Ventana de agregación y periodicidad de envíos. |
-| `ENABLE_HAILO8` | `False` | Habilitación de recolección en Canal 1. |
+| `ENABLE_HAILO8` | `False` | Habilitación de recolección en Canal 1 (Hailo-8). |
 
 ---
 
@@ -105,4 +105,4 @@
 - [ ] Ninguna tarea pendiente en este orquestador.
 
 ---
-> Creado: 2026-09-14 · Última revisión: 2026-09-14
+> Creado: 2026-09-14 · Última revisión: 2026-09-24

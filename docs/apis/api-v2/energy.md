@@ -57,7 +57,7 @@ Permite adjuntar la telemetría del sistema en la misma llamada:
 
 ## 3. Formato del Payload para Monitor Multicanal (Raspberry Pi 5)
 
-Ejemplo con los dos canales activos (Canal 0 = Raspberry Pi 5 base, Canal 1 = Hailo-8 M.2):
+Ejemplo con los dos canales activos desacoplados (Canal 0 = Raspberry Pi 5 base neta, Canal 1 = Hailo-8 M.2 en PCIe):
 
 ```json
 {
@@ -69,15 +69,15 @@ Ejemplo con los dos canales activos (Canal 0 = Raspberry Pi 5 base, Canal 1 = Ha
       {
         "channel": 0,
         "voltage": 5.08,
-        "amperage": 0.54,
-        "power": 2.74,
+        "amperage": 0.441,
+        "power": 2.24,
         "temperature": 48.2
       },
       {
         "channel": 1,
         "voltage": 3.30,
-        "amperage": 0.35,
-        "power": 1.15,
+        "amperage": 0.152,
+        "power": 0.50,
         "temperature": 41.0
       }
     ]
@@ -98,7 +98,7 @@ Ejemplo con los dos canales activos (Canal 0 = Raspberry Pi 5 base, Canal 1 = Ha
 }
 ```
 
-Si Hailo-8 está desactivado (`ENABLE_HAILO8 = False`), el canal 1 se omite completamente del array `loads`.
+*(Nota: De acuerdo con la decisión técnica DT-011, Canal 0 descuenta el consumo estimado del Canal 1 (`P_rpi = P_total_pmic - P_hailo`). Esto permite que la API mantenga las dos entidades individuales sin duplicar la energía del sistema en el acumulador global).*
 
 ---
 
@@ -148,4 +148,4 @@ Si Hailo-8 está desactivado (`ENABLE_HAILO8 = False`), el canal 1 se omite comp
 - `429 Too Many Requests`: Excedido el límite de 60 peticiones/min.
 
 ---
-> Creado: 2026-09-14 · Última revisión: 2026-09-14
+> Creado: 2026-09-14 · Última revisión: 2026-09-24

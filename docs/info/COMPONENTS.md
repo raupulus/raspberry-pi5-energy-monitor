@@ -11,7 +11,7 @@ Este documento cataloga los componentes del sistema, su estado de implementació
 | **Config Loader** | `src/env.py` / `src/env.example.py` | ✅ Verificado | Carga dinámica y tipada de credenciales, URLs de API y flags (`ENABLE_HAILO8`). |
 | **PMIC DA9091 Collector** | `src/collectors/pmic.py` | ✅ Verificado | Adquisición ADC de 12 raíles, voltajes, potencias y corriente total vía `vcgencmd`. |
 | **System & Health Collector** | `src/collectors/system.py` | ✅ Verificado | CPU, RAM, disco, temperaturas SoC/RP1, RPM y estado del ventilador, throttling. |
-| **Hailo-8 AI Collector** | `src/collectors/hailo.py` | ✅ Verificado | Telemetría térmica de silicio TS0/TS1 y potencia estimada en Canal 1 (opcional). |
+| **Hailo-8 AI Collector** | `src/collectors/hailo.py` | ✅ Verificado | Telemetría térmica de silicio TS0/TS1 y potencia estimada en Canal 1 (desacoplada de Canal 0). |
 | **Data Aggregator & Buffer** | `src/buffer/aggregator.py` | ✅ Verificado | Acumulación en RAM (Zero-Disk Wear), cálculo de medias y armado de payload. |
 | **API Client** | `src/api/client.py` | ✅ Verificado | Serialización JSON, cabeceras Bearer, POST con reintentos exponenciales a API V2. |
 | **Daemon Orchestrator** | `src/main.py` | ✅ Verificado | Bucle principal síncrono, temporización, manejo de señales y flags CLI. |
@@ -31,7 +31,7 @@ Este documento cataloga los componentes del sistema, su estado de implementació
 - **Implementación**:
   - `PmicCollector`: Parsea voltajes y corrientes de los 12 raíles del PMIC DA9091.
   - `SystemCollector`: Lee `/proc/stat`, `/proc/meminfo`, `os.statvfs`, `/sys/class/thermal`, tacómetro fan RPM en `hwmon2` y throttling.
-  - `HailoCollector`: Integración perezosa con `hailo_platform.Device` para temperaturas TS0/TS1 y estimación de potencia en bus PCIe.
+  - `HailoCollector`: Integración perezosa con `hailo_platform.Device` para temperaturas TS0/TS1 y estimación de potencia en bus PCIe (Canal 1).
 
 ### 3. Agregador y Búfer en Memoria (`src/buffer/`)
 - **Estado**: ✅ Verificado.
@@ -46,4 +46,4 @@ Este documento cataloga los componentes del sistema, su estado de implementació
 - **Implementación**: `EnergyMonitorDaemon` orquesta el muestreo periódico y emisión. Soporta `--once`, `--dry-run` y `--mock`, integrándose con la unidad systemd `systemd/energy-monitor.service`.
 
 ---
-> Creado: 2026-09-13 · Última revisión: 2026-09-14
+> Creado: 2026-09-13 · Última revisión: 2026-09-24

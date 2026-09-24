@@ -9,14 +9,17 @@
 ### Qué hace
 - Consulta las temperaturas internas del silicio de la NPU (sensores `ts0` y `ts1`) y el estado de estrangulamiento térmico utilizando el SDK oficial `hailo_platform.Device`.
 - Calcula la temperatura media del chip Hailo-8 (`avg_temp = (ts0 + ts1) / 2.0`).
-- Estima la potencia consumida en vatios por el módulo M.2 calculando la potencia disipada en los raíles de 3.3V y 1.8V del PMIC DA9091 (`3V3_SYS` y `1V8_SYS`).
+- Estima la potencia consumida en vatios por el módulo M.2 calculando la potencia disipada en los raíles de 3.3V y 1.8V del PMIC DA9091 (`3V3_SYS` y `1V8_SYS`), con un suelo en reposo de 0.50 W.
+- Se envía como **Canal 1** en el array `loads` del payload de energía (deduciéndose simultáneamente del Canal 0 para garantizar que la suma total sea exacta y sin duplicidades, DT-011).
+- Provee la temperatura media para enriquecer la telemetría de salud en `device_info.extra.hailo8_temp`.
 - Aplica importación perezosa (*lazy import*) de la librería `hailo_platform` para evitar que la aplicación falle si el módulo de hardware o el driver PCIe no están instalados.
-- Retorna `None` inmediatamente si `ENABLE_HAILO8` está desactivado (`False`), provocando que el Canal 1 se omita por completo en el payload de energía.
+- Retorna `None` inmediatamente si `ENABLE_HAILO8` está desactivado (`False`), provocando que el Canal 1 se omita por completo en el payload.
 - Proporciona modo simulado (`force_mock=True` o fallback si no está el SDK instalado) con métricas realistas verificadas en hardware real.
 
 ### Qué NO hace
 - No intenta controlar el firmware, modelos de inferencia o memoria de la Hailo-8.
 - No monitorea el ventilador del HAT Hailo-8 (aplazado a `docs/future/hailo8-fan.md` al carecer el HAT de tacómetro accesible por Device Tree).
+- No duplica energía con la Raspberry Pi: el agregador resta exactamente su potencia del Canal 0.
 
 ---
 
@@ -87,7 +90,7 @@ class HailoHealth:
 ## 7. Trampas conocidas
 
 - **TR-002 (Control de Hailo-8)**: Si el módulo PCIe entra en suspensión o el driver `hailort` no está compilado para el kernel en ejecución, la llamada a `Device()` puede fallar. Se mitiga capturando todas las excepciones y retornando `None`.
-- **TR-006 (Ausencia de shunt DVM dedicado)**: La tarjeta M.2 de Hailo-8 no tiene shunt propio; su potencia se estima cruzando el consumo diferencial en los raíles `3V3_SYS` y `1V8_SYS` del PMIC DA9091.
+- **TR-006 (Ausencia de shunt DVM dedicado)**: La tarjeta M.2 de Hailo-8 no tiene shunt propio en placa; su potencia se estima cruzando el consumo en los raíles `3V3_SYS` y `1V8_SYS` del PMIC DA9091. Para evitar duplicidad en la API, esa potencia estimada se descuenta del Canal 0 en el agregador (DT-011).
 
 ---
 
@@ -105,4 +108,4 @@ class HailoHealth:
 - [ ] Ninguna tarea pendiente en este colector.
 
 ---
-> Creado: 2026-09-14 · Última revisión: 2026-09-14
+> Creado: 2026-09-14 · Última revisión: 2026-09-24

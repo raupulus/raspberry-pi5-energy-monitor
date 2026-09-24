@@ -71,6 +71,7 @@ class TestTelemetryAggregator(unittest.TestCase):
 
     def test_flush_without_hailo(self) -> None:
         """Verifica agregación cuando Hailo-8 no está presente (Canal 1 omitido)."""
+        self.aggregator._window_start_time = 100.0
         self.aggregator.add_sample(self.mock_pmic, self.mock_system, hailo=None, timestamp=100.0)
         self.aggregator.add_sample(self.mock_pmic, self.mock_system, hailo=None, timestamp=200.0)
 
@@ -83,6 +84,7 @@ class TestTelemetryAggregator(unittest.TestCase):
         self.assertEqual(payload.loads[0].channel, 0)
         self.assertEqual(payload.loads[0].fan, 1)
         self.assertAlmostEqual(payload.loads[0].voltage, 5.10, places=2)
+        self.assertAlmostEqual(payload.loads[0].power, 3.50, places=2)
         self.assertEqual(payload.duration, 100)
 
         # Verificar device_info
@@ -96,25 +98,58 @@ class TestTelemetryAggregator(unittest.TestCase):
         self.assertEqual(info["extra"]["rp1_temp"], 48.0)
         self.assertEqual(info["extra"]["fan_rpm"], 3800)
 
-    def test_flush_with_hailo(self) -> None:
-        """Verifica agregación con Canal 1 incluido cuando hay muestras de Hailo-8."""
-        self.aggregator.add_sample(self.mock_pmic, self.mock_system, hailo=self.mock_hailo, timestamp=100.0)
+    def test_flush_with_hailo_two_channels_no_duplication(self) -> None:
+        """Verifica que se envían Canal 0 (RPi neta) y Canal 1 (Hailo-8) sumando el total exacto."""
+        self.aggregator._window_start_time = 100.0
+        self.aggregator.add_sample(
+            self.mock_pmic, self.mock_system, hailo=self.mock_hailo, timestamp=100.0
+        )
 
         payload = self.aggregator.flush(now=100.0)
 
+        # Se envían dos canales
         self.assertEqual(len(payload.loads), 2)
         channel_0 = payload.loads[0]
         channel_1 = payload.loads[1]
 
         self.assertEqual(channel_0.channel, 0)
         self.assertEqual(channel_1.channel, 1)
-        self.assertEqual(channel_1.voltage, 3.30)
-        self.assertAlmostEqual(channel_1.power, 0.85, places=2)
-        self.assertAlmostEqual(channel_1.temperature, 37.5, places=2)
-        self.assertIsNone(channel_1.fan)
 
-        # hail8_temp debe estar en extra
+        # Canal 1: Hailo-8 estimado a 0.85 W
+        self.assertAlmostEqual(channel_1.power, 0.85, places=2)
+        self.assertEqual(channel_1.voltage, 3.30)
+        self.assertAlmostEqual(channel_1.temperature, 37.5, places=2)
+
+        # Canal 0: Raspberry Pi neta = 3.50 W - 0.85 W = 2.65 W
+        self.assertAlmostEqual(channel_0.power, 2.65, places=2)
+        self.assertEqual(channel_0.voltage, 5.10)
+
+        # La suma exacta de ambos canales es la potencia total del PMIC (3.50 W)
+        self.assertAlmostEqual(channel_0.power + channel_1.power, 3.50, places=2)
+
+        # device_info.extra.hailo8_temp también se incluye
+        self.assertIn("hailo8_temp", payload.device_info["extra"])
         self.assertEqual(payload.device_info["extra"]["hailo8_temp"], 37.5)
+
+    def test_duration_flush_at_305s_from_previous_window(self) -> None:
+        """Verifica que muestras cada 10 s y flush a los 305 s computan duration=305."""
+        self.aggregator._window_start_time = 1000.0
+        for t in range(1000, 1301, 10):
+            self.aggregator.add_sample(self.mock_pmic, self.mock_system, timestamp=float(t))
+
+        payload = self.aggregator.flush(now=1305.0)
+        self.assertEqual(payload.duration, 305)
+        self.assertEqual(self.aggregator._window_start_time, 1305.0)
+
+    def test_first_window_duration_from_startup(self) -> None:
+        """Verifica que la primera ventana tras arrancar computa la duración exacta desde el arranque."""
+        agg = TelemetryAggregator(hardware_device_id=self.device_id, report_interval_seconds=300.0)
+        startup_time = agg._window_start_time
+        now = startup_time + 45.0
+        agg.add_sample(self.mock_pmic, self.mock_system, timestamp=now)
+
+        payload = agg.flush(now=now)
+        self.assertEqual(payload.duration, 45)
 
 
 if __name__ == "__main__":

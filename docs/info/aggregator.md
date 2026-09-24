@@ -11,11 +11,12 @@
 - Aplica la directiva estricta de **Zero-Disk Wear**: no escribe archivos temporales, logs en disco ni bases de datos locales durante la agregación continua.
 - Evalúa si ha transcurrido la ventana de reporte configurada (`report_interval_seconds`) con respecto al inicio de la ventana actual (`_window_start_time`).
 - En el momento de reporte (`flush()`), calcula la media aritmética de todas las magnitudes eléctricas continuas:
-  - **Canal 0 (Raspberry Pi 5)**: Tensión media (`EXT5V_V`), corriente media estimada, potencia disipada media, temperatura media del SoC, y último estado del ventilador.
-  - **Canal 1 (Hailo-8)**: Si existen muestras válidas durante la ventana, calcula potencia media, temperatura media y deriva la corriente a 3.30V. Si no hay muestras, omite Canal 1 de la lista de cargas (`loads`).
-- Calcula el valor exacto de `duration` (segundos entre la primera y la última muestra de la ventana, o `report_interval_seconds` como valor por defecto).
-- Construye el bloque anidado `hardware_device_info` con promedios de CPU y RAM, último valor de disco, uptime, IP local, y bloque `extra` con la máscara de estrangulamiento, temperatura RP1, RPM del ventilador y temperatura de Hailo-8.
-- Resetea el búfer en memoria y reinicia el temporizador de ventana.
+  - **Canal 0 (Raspberry Pi 5 base)**: Tensión media (`EXT5V_V`), potencia neta (`P_total_pmic - P_hailo`), corriente neta equivalente, temperatura media del SoC, y último estado del ventilador.
+  - **Canal 1 (Hailo-8 M.2)**: Si existen muestras de Hailo-8, asigna su potencia estimada en PCIe (~0.50 W en reposo), corriente equivalente a 3.30 V y temperatura media del chip.
+  - La suma de `loads[0].power + loads[1].power` equivale exactamente al consumo total real del PMIC DA9091 sin duplicidad (DT-011).
+- Calcula el valor exacto y continuo de `duration` como el tiempo transcurrido desde el inicio de la ventana actual (`duration = max(1, int(round(current_time - self._window_start_time)))`), garantizando una integración continua de energía sin huecos ni solapes temporales (DT-010).
+- Construye el bloque anidado `hardware_device_info` con promedios de CPU y RAM, último valor de disco, uptime, IP local, y bloque `extra` con la máscara de estrangulamiento, temperatura RP1, RPM del ventilador y temperatura de Hailo-8 (`hailo8_temp`).
+- Resetea el búfer en memoria y reinicia el temporizador de ventana (`_window_start_time = current_time`).
 
 ### Qué NO hace
 - No gestiona conexiones de red ni realiza peticiones HTTP (delegado en `EnergyApiClient`).
@@ -65,11 +66,16 @@ class EnergyPayload:
 ### Emisión de Ventana (`flush`)
 1. Verifica que el búfer no esté vacío (si está vacío, lanza `ValueError`).
 2. Itera sobre las muestras acumuladas calculando sumatorias de voltajes, amperajes, potencias, CPU, RAM y temperaturas.
-3. Extrae la duración temporal real: `duration = max(1, int(round(last_ts - first_ts)))`.
-4. Construye `loads[0]` (Canal 0, obligatorio) y opcionalmente `loads[1]` (Canal 1, solo si `hailo_samples_count > 0`).
-5. Genera la marca de tiempo `read_at` en formato ISO 8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`).
-6. Vacía la cola (`_samples.clear()`) y actualiza `_window_start_time`.
-7. Retorna la instancia de `EnergyPayload`.
+3. Extrae la duración temporal real: `duration = max(1, int(round(current_time - self._window_start_time)))`.
+4. Si hay muestras de Hailo-8:
+   - Añade `loads[0]` (Canal 0, RPi neta = `P_pmic - P_hailo`).
+   - Añade `loads[1]` (Canal 1, Hailo-8 = `P_hailo`).
+   - Copia la temperatura media a `device_info["extra"]["hailo8_temp"]`.
+5. Si no hay muestras de Hailo-8:
+   - Añade `loads[0]` (Canal 0 con el 100% de la potencia PMIC).
+6. Genera la marca de tiempo `read_at` en formato ISO 8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`).
+7. Vacía la cola (`_samples.clear()`) y actualiza `_window_start_time = current_time`.
+8. Retorna la instancia de `EnergyPayload`.
 
 ---
 
@@ -107,8 +113,8 @@ class EnergyPayload:
 
 ## 7. Trampas conocidas
 
-- Si se recolecta una única muestra (p. ej. ejecución única `--once`), la diferencia entre `last_sample_time` y `first_sample_time` es cero. El agregador detecta esta condición y asigna por defecto `duration = max(1, int(round(report_interval_seconds)))` para cumplir la restricción del contrato de API V2 (`duration >= 1`).
-- Canal 1 sólo se añade a `loads` si durante la ventana hubo lecturas activas de Hailo-8. Si el flag `ENABLE_HAILO8` está desactivado, Canal 1 desaparece limpiamente del JSON.
+- **Cálculo de `duration` (DT-010)**: La duración se computa con respecto a `_window_start_time`. Esto garantiza que cubre la ventana completa transcurrida entre envíos reales sin el sesgo del 3,3 % que provocaba la resta de primera a última muestra.
+- **Desacoplamiento de Cargas (DT-011)**: El Canal 0 descuenta la potencia del Canal 1 (`P_rpi = P_total - P_hailo`). Esto permite que la API mantenga las dos entidades individuales sin duplicar la energía del sistema en el acumulador global.
 
 ---
 
@@ -116,8 +122,10 @@ class EnergyPayload:
 
 - [x] `tests/test_aggregator.py::TestTelemetryAggregator.test_empty_buffer_flush_raises`: Valida que llamar a `flush()` en vacío genera excepción controlada.
 - [x] `tests/test_aggregator.py::TestTelemetryAggregator.test_should_report_logic`: Valida la temporización de apertura y cierre de ventanas.
-- [x] `tests/test_aggregator.py::TestTelemetryAggregator.test_flush_without_hailo`: Verifica la omisión del Canal 1 y el cálculo de Canal 0 y salud del sistema.
-- [x] `tests/test_aggregator.py::TestTelemetryAggregator.test_flush_with_hailo`: Valida el cálculo combinado de Canal 0 y Canal 1 con temperaturas e indicadores extra.
+- [x] `tests/test_aggregator.py::TestTelemetryAggregator.test_flush_without_hailo`: Verifica el cálculo de Canal 0 con el total de potencia cuando no hay acelerador.
+- [x] `tests/test_aggregator.py::TestTelemetryAggregator.test_flush_with_hailo_two_channels_no_duplication`: Valida el desglose exacto entre Canal 0 (neta) y Canal 1 (Hailo-8), sumando la potencia total sin duplicar.
+- [x] `tests/test_aggregator.py::TestTelemetryAggregator.test_duration_flush_at_305s_from_previous_window`: Comprueba que una ventana de 305 s con muestras cada 10 s computa `duration=305`.
+- [x] `tests/test_aggregator.py::TestTelemetryAggregator.test_first_window_duration_from_startup`: Verifica que la primera ventana computa la duración exacta desde el inicio del demonio.
 
 ---
 
@@ -126,4 +134,4 @@ class EnergyPayload:
 - [ ] Ninguna tarea pendiente en este módulo.
 
 ---
-> Creado: 2026-09-14 · Última revisión: 2026-09-14
+> Creado: 2026-09-14 · Última revisión: 2026-09-24

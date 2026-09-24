@@ -20,7 +20,7 @@ Diseñado bajo la premisa de **desgaste cero de disco (*Zero-Disk Wear*)** y **c
   - Diagnóstico de subvoltaje y *throttling*: Captura continua de la máscara de bits de `vcgencmd get_throttled`.
 - **Soporte Modular Opcional para Hailo-8 M.2 AI NPU**:
   - Lectura de temperaturas internas de silicio (sensores térmicos TS0 y TS1) y estado de estrangulamiento térmico mediante el SDK oficial `hailo_platform.Device`.
-  - Estimación de consumo eléctrico a partir del incremento de potencia en los raíles `3V3_SYS` y `1V8_SYS` del PMIC.
+  - Estimación de consumo eléctrico en bus PCIe (Canal 1), descontándose simultáneamente del Canal 0 para mantener las dos entidades activas en la API sin duplicar energía (DT-011).
   - Canal condicional: Si `ENABLE_HAILO8 = False` o el módulo no está conectado, el Canal 1 se omite limpiamente del payload.
 - **Búfer en RAM (Zero-Disk Wear)**:
   - Retención de muestras exclusivamente en memoria volátil mediante colas circulares (`collections.deque`).
@@ -220,9 +220,9 @@ El payload enviado a la API cumple estrictamente con el contrato universal:
     "loads": [
       {
         "channel": 0,
-        "voltage": 5.06,
-        "amperage": 0.551,
-        "power": 2.786,
+        "voltage": 5.064,
+        "amperage": 0.454,
+        "power": 2.301,
         "temperature": 48.5,
         "fan": 1
       },
